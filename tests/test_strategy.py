@@ -9,10 +9,14 @@ from theme_second_wave.strategy import ThemeSecondWaveAnalyzer
 
 def test_repair_setup_is_classified_as_repair() -> None:
     bars = _sample_bars()
+    bars.attrs["source"] = "test_source"
     candidate = StockCandidate(code="000001", name="测试股", theme="AI", theme_score=80)
     result = ThemeSecondWaveAnalyzer(min_history_days=60).analyze(candidate, bars)
     assert result.stage in {WaveStage.REPAIR, WaveStage.SECOND_WAVE_CONFIRMED}
     assert result.score >= 50
+    assert result.metrics["latest_date"] == "2026-03-23"
+    assert result.metrics["data_source"] == "test_source"
+    assert result.metrics["trigger_distance_pct"] is not None
 
 
 def test_markdown_escapes_table_pipes() -> None:
@@ -43,6 +47,30 @@ def test_discord_summary_uses_list_for_missing_data() -> None:
     assert "| 排名 |" not in summary
     assert "1. 603881 数据港" in summary
     assert "原因: failed to load daily bars" in summary
+
+
+def test_discord_summary_includes_focus_fields() -> None:
+    result = ScanResult(
+        candidate=StockCandidate(code="688313", name="仕佳光子", theme="光通信"),
+        stage=WaveStage.REPAIR,
+        score=68.0,
+        breakdown=ScoreBreakdown(),
+        current_price=184.9,
+        trigger_price=193.56,
+        invalidation_price=112.83,
+        metrics={
+            "trigger_distance_pct": 4.68,
+            "latest_date": "2026-05-20",
+            "data_source": "yfinance",
+        },
+    )
+
+    summary = render_discord_summary([result])
+
+    assert "## 重点跟踪" in summary
+    assert "距触发 +4.68%" in summary
+    assert "数据日 2026-05-20" in summary
+    assert "源 yfinance" in summary
 
 
 def _sample_bars() -> pd.DataFrame:

@@ -13,6 +13,7 @@ class ThemeSecondWaveAnalyzer:
         self.min_history_days = min_history_days
 
     def analyze(self, candidate: StockCandidate, daily_bars: pd.DataFrame) -> ScanResult:
+        data_source = str(daily_bars.attrs.get("source", "unknown"))
         try:
             df = add_indicators(daily_bars)
         except Exception as exc:
@@ -107,6 +108,8 @@ class ThemeSecondWaveAnalyzer:
         trigger_price = max(x for x in (ma5, ma10, repair_high) if x)
         invalidation_candidates = [x for x in (ma20, ma60, repair_low) if x]
         invalidation = max(min(invalidation_candidates), 0.0) if invalidation_candidates else None
+        trigger_distance = safe_pct(trigger_price, current) if trigger_price else None
+        latest_date = pd.to_datetime(latest["date"]).strftime("%Y-%m-%d")
 
         return ScanResult(
             candidate=candidate,
@@ -135,6 +138,11 @@ class ThemeSecondWaveAnalyzer:
                 "ma10": round(ma10, 3) if ma10 else None,
                 "ma20": round(ma20, 3) if ma20 else None,
                 "ma60": round(ma60, 3) if ma60 else None,
+                "trigger_distance_pct": round(trigger_distance, 2)
+                if trigger_distance is not None
+                else None,
+                "latest_date": latest_date,
+                "data_source": data_source,
             },
         )
 

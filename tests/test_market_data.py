@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -64,3 +65,23 @@ def test_yfinance_loader_accepts_multiindex_columns(monkeypatch: pytest.MonkeyPa
 
     assert list(result.columns) == list(REQUIRED_COLUMNS)
     assert result["close"].tolist() == [10.5, 11.0, 11.6]
+    assert result.attrs["source"] == "yfinance"
+
+
+def test_local_csv_source_survives_tail(tmp_path: Path) -> None:
+    csv_path = tmp_path / "603881.csv"
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2026-01-01", periods=4),
+            "open": [1, 2, 3, 4],
+            "high": [1, 2, 3, 4],
+            "low": [1, 2, 3, 4],
+            "close": [1, 2, 3, 4],
+            "volume": [100, 200, 300, 400],
+        }
+    ).to_csv(csv_path, index=False)
+
+    result = MarketDataProvider(tmp_path).get_daily("603881", days=2)
+
+    assert len(result) == 2
+    assert result.attrs["source"] == "local_csv:603881.csv"

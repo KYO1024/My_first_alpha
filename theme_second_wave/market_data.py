@@ -21,7 +21,7 @@ class MarketDataProvider:
         if self.data_dir:
             local = self._load_local_csv(code)
             if local is not None:
-                return local.tail(days).reset_index(drop=True)
+                return _tail_with_attrs(local, days)
         try:
             return self._load_online(code, days=days)
         except Exception as exc:
@@ -37,7 +37,7 @@ class MarketDataProvider:
         ]
         for path in candidates:
             if path.exists():
-                return normalize_ohlcv(pd.read_csv(path))
+                return _with_source(normalize_ohlcv(pd.read_csv(path)), f"local_csv:{path.name}")
         return None
 
     def _load_online(self, code: str, days: int) -> pd.DataFrame:
@@ -92,7 +92,7 @@ def _load_akshare_daily(code: str, days: int) -> pd.DataFrame:
             "成交量": "volume",
         }
     )
-    return normalize_ohlcv(raw).tail(days).reset_index(drop=True)
+    return _with_source(normalize_ohlcv(raw).tail(days).reset_index(drop=True), "akshare")
 
 
 def _load_yfinance_daily(code: str, days: int) -> pd.DataFrame:
@@ -121,7 +121,18 @@ def _load_yfinance_daily(code: str, days: int) -> pd.DataFrame:
             "Volume": "volume",
         }
     )
-    return normalize_ohlcv(raw).tail(days).reset_index(drop=True)
+    return _with_source(normalize_ohlcv(raw).tail(days).reset_index(drop=True), "yfinance")
+
+
+def _with_source(frame: pd.DataFrame, source: str) -> pd.DataFrame:
+    frame.attrs["source"] = source
+    return frame
+
+
+def _tail_with_attrs(frame: pd.DataFrame, days: int) -> pd.DataFrame:
+    trimmed = frame.tail(days).reset_index(drop=True)
+    trimmed.attrs.update(frame.attrs)
+    return trimmed
 
 
 def _flatten_yfinance_frame(frame: pd.DataFrame) -> pd.DataFrame:

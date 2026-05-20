@@ -60,15 +60,15 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
             "",
             "## 候选明细",
             "",
-            "| 排名 | 代码 | 名称 | 主题/板块 | 阶段 | 分数 | 现价 | 触发价 | 失效价 | 动作 |",
-            "|---:|---|---|---|---|---:|---:|---:|---:|---|",
+            "| 排名 | 代码 | 名称 | 主题/板块 | 阶段 | 分数 | 现价 | 触发价 | 距触发 | 失效价 | 数据日 | 数据源 | 动作 |",
+            "|---:|---|---|---|---|---:|---:|---:|---:|---:|---|---|---|",
         ]
     )
     for idx, item in enumerate(ordered, start=1):
         candidate = item.candidate
         theme = " / ".join(part for part in (candidate.theme, candidate.sector) if part) or "-"
         lines.append(
-            "| {idx} | {code} | {name} | {theme} | {stage} | {score:.1f} | {price} | {trigger} | {stop} | {action} |".format(
+            "| {idx} | {code} | {name} | {theme} | {stage} | {score:.1f} | {price} | {trigger} | {distance} | {stop} | {date} | {source} | {action} |".format(
                 idx=idx,
                 code=_table_cell(candidate.code),
                 name=_table_cell(candidate.name or "-"),
@@ -77,7 +77,10 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
                 score=item.score,
                 price=_fmt(item.current_price),
                 trigger=_fmt(item.trigger_price),
+                distance=_fmt_signed_pct(_metric_float(item, "trigger_distance_pct")),
                 stop=_fmt(item.invalidation_price),
+                date=_table_cell(_metric_text(item, "latest_date")),
+                source=_table_cell(_metric_text(item, "data_source")),
                 action=_table_cell(item.action),
             )
         )
@@ -99,7 +102,10 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
                 f"- 阶段: {STAGE_LABELS[item.stage]}",
                 f"- 分数: {item.score:.1f}",
                 f"- 触发价: {_fmt(item.trigger_price)}",
+                f"- 距触发: {_fmt_signed_pct(_metric_float(item, 'trigger_distance_pct'))}",
                 f"- 失效价: {_fmt(item.invalidation_price)}",
+                f"- 数据日: {_metric_text(item, 'latest_date')}",
+                f"- 数据源: {_metric_text(item, 'data_source')}",
                 f"- 高点回撤: {_fmt_pct(item.drawdown_from_high)}",
                 f"- 修复量能: {_fmt(item.volume_contraction)} 倍一波高点附近均量",
                 f"- 操作: {item.action}",
@@ -136,6 +142,20 @@ def render_discord_summary(results: list[ScanResult], generated_at: datetime | N
         summary.append(f"{STAGE_LABELS[stage]} {count}")
     lines.append(" | ".join(summary))
 
+    lines.extend(["", "## 重点跟踪"])
+    focus = _focus_results(ordered)
+    if not focus:
+        lines.append("暂无达到重点跟踪标准的标的。")
+    else:
+        for item in focus[:5]:
+            c = item.candidate
+            lines.append(
+                f"- {c.code} {c.name or '-'} | {STAGE_LABELS[item.stage]} | "
+                f"距触发 {_fmt_signed_pct(_metric_float(item, 'trigger_distance_pct'))} | "
+                f"触发 {_fmt(item.trigger_price)} | 数据日 {_metric_text(item, 'latest_date')} | "
+                f"源 {_metric_text(item, 'data_source')}"
+            )
+
     lines.extend(["", "## 候选明细"])
     for idx, item in enumerate(ordered, start=1):
         c = item.candidate
@@ -150,7 +170,9 @@ def render_discord_summary(results: list[ScanResult], generated_at: datetime | N
             continue
         lines.append(
             f"{base} | 现价 {_fmt(item.current_price)} | 触发 {_fmt(item.trigger_price)} | "
-            f"失效 {_fmt(item.invalidation_price)} | {item.action}"
+            f"距触发 {_fmt_signed_pct(_metric_float(item, 'trigger_distance_pct'))} | "
+            f"失效 {_fmt(item.invalidation_price)} | 数据日 {_metric_text(item, 'latest_date')} | "
+            f"源 {_metric_text(item, 'data_source')} | {item.action}"
         )
 
     return "\n".join(lines).rstrip() + "\n"
@@ -192,7 +214,10 @@ def to_row(item: ScanResult) -> dict[str, object]:
         "score": item.score,
         "current_price": item.current_price,
         "trigger_price": item.trigger_price,
+        "trigger_distance_pct": _metric_float(item, "trigger_distance_pct"),
         "invalidation_price": item.invalidation_price,
+        "latest_date": _metric_text(item, "latest_date"),
+        "data_source": _metric_text(item, "data_source"),
         "drawdown_from_high": item.drawdown_from_high,
         "volume_contraction": item.volume_contraction,
         "bias_ma5": item.bias_ma5,
@@ -213,6 +238,36 @@ def _fmt_pct(value: float | None) -> str:
     if value is None:
         return "-"
     return f"{value:.2f}%"
+
+
+def _fmt_signed_pct(value: float | None) -> str:
+    if value is None:
+        return "-"
+    return f"{value:+.2f}%"
+
+
+def _focus_results(results: list[ScanResult]) -> list[ScanResult]:
+    focus_stages = {WaveStage.SECOND_WAVE_CONFIRMED, WaveStage.REPAIR, WaveStage.FIRST_WAVE}
+    return [
+        item
+        for item in results
+        if item.stage in focus_stages and item.trigger_price is not None and item.current_price is not None
+    ]
+
+
+def _metric_float(item: ScanResult, key: str) -> float | None:
+    value = item.metrics.get(key)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _metric_text(item: ScanResult, key: str) -> str:
+    value = item.metrics.get(key)
+    if value is None or value == "":
+        return "-"
+    return str(value)
 
 
 def _table_cell(value: object) -> str:
