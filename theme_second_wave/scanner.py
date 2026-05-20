@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from .dashboard import render_markdown, sort_results, write_reports
+from .dashboard import render_discord_summary, sort_results, write_reports
 from .discord import send_discord_message
 from .market_data import MarketDataProvider
 from .models import ScanConfig, ScanResult
@@ -36,8 +36,7 @@ class CandidateScanner:
         results = self.run()
         markdown_path, csv_path = write_reports(results, self.config.report_dir)
         if self.config.send_discord:
-            markdown = render_markdown(results)
-            send_discord_message(_discord_summary(markdown))
+            send_discord_message(_discord_summary(render_discord_summary(results)))
         return results, markdown_path, csv_path
 
 

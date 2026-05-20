@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from theme_second_wave.models import StockCandidate, WaveStage
+from theme_second_wave.dashboard import render_discord_summary, render_markdown
+from theme_second_wave.models import ScanResult, ScoreBreakdown, StockCandidate, WaveStage
 from theme_second_wave.strategy import ThemeSecondWaveAnalyzer
 
 
@@ -12,6 +13,36 @@ def test_repair_setup_is_classified_as_repair() -> None:
     result = ThemeSecondWaveAnalyzer(min_history_days=60).analyze(candidate, bars)
     assert result.stage in {WaveStage.REPAIR, WaveStage.SECOND_WAVE_CONFIRMED}
     assert result.score >= 50
+
+
+def test_markdown_escapes_table_pipes() -> None:
+    result = ScanResult(
+        candidate=StockCandidate(code="000001", name="测试|股", theme="AI|算力"),
+        stage=WaveStage.WATCH,
+        score=10.0,
+        breakdown=ScoreBreakdown(),
+    )
+
+    markdown = render_markdown([result])
+
+    assert "测试\\|股" in markdown
+    assert "AI\\|算力" in markdown
+
+
+def test_discord_summary_uses_list_for_missing_data() -> None:
+    result = ScanResult(
+        candidate=StockCandidate(code="603881", name="数据港", theme="数据中心"),
+        stage=WaveStage.DATA_MISSING,
+        score=0.0,
+        breakdown=ScoreBreakdown(),
+        risks=["failed to load daily bars"],
+    )
+
+    summary = render_discord_summary([result])
+
+    assert "| 排名 |" not in summary
+    assert "1. 603881 数据港" in summary
+    assert "原因: failed to load daily bars" in summary
 
 
 def _sample_bars() -> pd.DataFrame:

@@ -42,7 +42,15 @@ class MarketDataProvider:
 
     def _load_online(self, code: str, days: int) -> pd.DataFrame:
         if _is_a_share(code):
-            return _load_akshare_daily(code, days)
+            try:
+                return _load_akshare_daily(code, days)
+            except Exception as akshare_exc:
+                try:
+                    return _load_yfinance_daily(_to_yfinance_a_share(code), days)
+                except Exception as yfinance_exc:
+                    raise MarketDataError(
+                        f"akshare failed: {akshare_exc}; yfinance failed: {yfinance_exc}"
+                    ) from yfinance_exc
         return _load_yfinance_daily(code, days)
 
 
@@ -60,6 +68,12 @@ def _to_suffix_a_share(code: str) -> str:
     if not _is_a_share(code):
         return code
     return f"{code}.SH" if code.startswith(("5", "6", "9")) else f"{code}.SZ"
+
+
+def _to_yfinance_a_share(code: str) -> str:
+    if not _is_a_share(code):
+        return code
+    return f"{code}.SS" if code.startswith(("5", "6", "9")) else f"{code}.SZ"
 
 
 def _load_akshare_daily(code: str, days: int) -> pd.DataFrame:

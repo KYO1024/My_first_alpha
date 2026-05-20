@@ -70,15 +70,15 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
         lines.append(
             "| {idx} | {code} | {name} | {theme} | {stage} | {score:.1f} | {price} | {trigger} | {stop} | {action} |".format(
                 idx=idx,
-                code=candidate.code,
-                name=candidate.name or "-",
-                theme=theme,
+                code=_table_cell(candidate.code),
+                name=_table_cell(candidate.name or "-"),
+                theme=_table_cell(theme),
                 stage=STAGE_LABELS[item.stage],
                 score=item.score,
                 price=_fmt(item.current_price),
                 trigger=_fmt(item.trigger_price),
                 stop=_fmt(item.invalidation_price),
-                action=item.action,
+                action=_table_cell(item.action),
             )
         )
 
@@ -110,6 +110,48 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
         if item.risks:
             lines.append(f"- 风险: {'; '.join(item.risks[:4])}")
         lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_discord_summary(results: list[ScanResult], generated_at: datetime | None = None) -> str:
+    generated_at = _to_report_time(generated_at)
+    ordered = sort_results(results)
+    lines = [
+        "# 主题强趋势股二波/修复行情看板",
+        f"生成时间: {generated_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        "",
+        "## 总览",
+    ]
+    summary = []
+    for stage in (
+        WaveStage.SECOND_WAVE_CONFIRMED,
+        WaveStage.REPAIR,
+        WaveStage.FIRST_WAVE,
+        WaveStage.WATCH,
+        WaveStage.FAILED,
+        WaveStage.DATA_MISSING,
+    ):
+        count = sum(1 for item in ordered if item.stage == stage)
+        summary.append(f"{STAGE_LABELS[stage]} {count}")
+    lines.append(" | ".join(summary))
+
+    lines.extend(["", "## 候选明细"])
+    for idx, item in enumerate(ordered, start=1):
+        c = item.candidate
+        theme = " / ".join(part for part in (c.theme, c.sector) if part) or "-"
+        base = (
+            f"{idx}. {c.code} {c.name or '-'} | {theme} | {STAGE_LABELS[item.stage]} | "
+            f"分数 {item.score:.1f}"
+        )
+        if item.stage == WaveStage.DATA_MISSING:
+            reason = item.risks[0] if item.risks else item.action
+            lines.append(f"{base} | {item.action} | 原因: {reason}")
+            continue
+        lines.append(
+            f"{base} | 现价 {_fmt(item.current_price)} | 触发 {_fmt(item.trigger_price)} | "
+            f"失效 {_fmt(item.invalidation_price)} | {item.action}"
+        )
 
     return "\n".join(lines).rstrip() + "\n"
 
@@ -171,3 +213,8 @@ def _fmt_pct(value: float | None) -> str:
     if value is None:
         return "-"
     return f"{value:.2f}%"
+
+
+def _table_cell(value: object) -> str:
+    text = str(value).replace("\n", " ").strip()
+    return text.replace("|", "\\|")
