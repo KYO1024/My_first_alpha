@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       WATCHLIST_PATH: ${{ github.event.inputs.watchlist_path || 'watch_list.xlsx' }}
       MAX_RESULTS: ${{ github.event.inputs.max_results || '30' }}
@@ -56,9 +57,11 @@ jobs:
           pip install -r requirements.txt
 
       - name: Validate code
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           python -m compileall theme_second_wave scripts tests
-          pytest -q
+          python -m pytest -q
 
       - name: Ensure watchlist exists
         run: |
