@@ -20,6 +20,21 @@ python scripts/sync_watchlist.py
 
 它会复制一份到仓库根目录，之后再提交并推送到 GitHub。
 
+本地更新候选池后的推荐流程：
+
+```bash
+cd /Users/ethan/Documents/My_first_alpha
+python scripts/sync_watchlist.py
+
+git add watch_list.xlsx
+git commit -m "Update watch list"
+git -c http.proxy=http://127.0.0.1:7890 \
+    -c http.version=HTTP/1.1 \
+    push
+```
+
+然后到 GitHub Actions 手动运行 `Theme Second Wave Monitor`。
+
 建议保留这些列：
 
 - `股票代码`
@@ -68,6 +83,8 @@ GitHub Actions 使用 UTC，所以 workflow 里对应的是：
 ```text
 30 10 * * 1-5
 ```
+
+报告里的“生成时间”固定按 `Asia/Shanghai` 显示，避免 GitHub Actions 默认 UTC 时间造成 8 小时偏差。
 
 ## 5. 查看结果
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -31,7 +32,7 @@ def sort_results(results: list[ScanResult]) -> list[ScanResult]:
 
 
 def render_markdown(results: list[ScanResult], generated_at: datetime | None = None) -> str:
-    generated_at = generated_at or datetime.now()
+    generated_at = _to_report_time(generated_at)
     ordered = sort_results(results)
     lines = [
         "# 主题强趋势股二波/修复行情看板",
@@ -111,6 +112,15 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _to_report_time(value: datetime | None = None) -> datetime:
+    timezone = ZoneInfo("Asia/Shanghai")
+    if value is None:
+        return datetime.now(timezone)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone)
+    return value.astimezone(timezone)
 
 
 def write_reports(results: list[ScanResult], report_dir: str | Path = "reports") -> tuple[Path, Path]:

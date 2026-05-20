@@ -113,6 +113,15 @@ python -m theme_second_wave.cli scan --send-discord
 
 详细步骤见 [docs/github-actions.md](docs/github-actions.md)。
 
+本地更新候选池后的常用流程：
+
+```bash
+python scripts/sync_watchlist.py
+git add watch_list.xlsx
+git commit -m "Update watch list"
+git -c http.proxy=http://127.0.0.1:7890 -c http.version=HTTP/1.1 push
+```
+
 ## 输出
 
 默认输出到：
