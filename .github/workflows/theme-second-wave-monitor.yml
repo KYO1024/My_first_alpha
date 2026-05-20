@@ -1,0 +1,92 @@
+name: Theme Second Wave Monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      watchlist_path:
+        description: "Path to watch_list.xlsx in the repository"
+        required: false
+        default: "watch_list.xlsx"
+      max_results:
+        description: "Max rows to include in the dashboard"
+        required: false
+        default: "30"
+      send_discord:
+        description: "Send dashboard to Discord"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  schedule:
+    # GitHub cron uses UTC. 10:30 UTC = 18:30 Asia/Shanghai.
+    - cron: "30 10 * * 1-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: theme-second-wave-monitor
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      WATCHLIST_PATH: ${{ github.event.inputs.watchlist_path || 'watch_list.xlsx' }}
+      MAX_RESULTS: ${{ github.event.inputs.max_results || '30' }}
+      SEND_DISCORD: ${{ github.event.inputs.send_discord || 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate code
+        run: |
+          python -m compileall theme_second_wave scripts tests
+          pytest -q
+
+      - name: Ensure watchlist exists
+        run: |
+          test -f "$WATCHLIST_PATH"
+
+      - name: Run scanner
+        run: |
+          if [ "$SEND_DISCORD" = "true" ]; then
+            python -m theme_second_wave.cli scan \
+              --watchlist "$WATCHLIST_PATH" \
+              --max-results "$MAX_RESULTS" \
+              --report-dir reports \
+              --send-discord
+          else
+            python -m theme_second_wave.cli scan \
+              --watchlist "$WATCHLIST_PATH" \
+              --max-results "$MAX_RESULTS" \
+              --report-dir reports
+          fi
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: theme-second-wave-dashboard
+          path: |
+            reports/latest_dashboard.md
+            reports/latest_results.csv
+            reports/scan_*.md
+          if-no-files-found: ignore
+          retention-days: 14
