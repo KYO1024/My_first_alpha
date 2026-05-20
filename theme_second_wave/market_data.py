@@ -107,10 +107,13 @@ def _load_yfinance_daily(code: str, days: int) -> pd.DataFrame:
     )
     if raw is None or raw.empty:
         raise MarketDataError("yfinance returned empty data")
-    raw = raw.reset_index()
+    raw = _flatten_yfinance_frame(raw).reset_index()
+    raw.columns = [_flatten_yfinance_column(col) for col in raw.columns]
     raw = raw.rename(
         columns={
             "Date": "date",
+            "Datetime": "date",
+            "index": "date",
             "Open": "open",
             "High": "high",
             "Low": "low",
@@ -119,3 +122,30 @@ def _load_yfinance_daily(code: str, days: int) -> pd.DataFrame:
         }
     )
     return normalize_ohlcv(raw).tail(days).reset_index(drop=True)
+
+
+def _flatten_yfinance_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    flattened = frame.copy()
+    flattened.columns = [_flatten_yfinance_column(col) for col in flattened.columns]
+    return flattened
+
+
+def _flatten_yfinance_column(column: object) -> str:
+    if not isinstance(column, tuple):
+        return str(column)
+
+    known = {
+        "date": "Date",
+        "datetime": "Datetime",
+        "open": "Open",
+        "high": "High",
+        "low": "Low",
+        "close": "Close",
+        "adj close": "Adj Close",
+        "volume": "Volume",
+    }
+    for part in column:
+        key = str(part).strip().lower()
+        if key in known:
+            return known[key]
+    return "_".join(str(part).strip() for part in column if str(part).strip())

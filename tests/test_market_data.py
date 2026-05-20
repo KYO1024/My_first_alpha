@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import sys
+
 import pandas as pd
 import pytest
 
 from theme_second_wave import market_data
+from theme_second_wave.indicators import REQUIRED_COLUMNS
 from theme_second_wave.market_data import MarketDataProvider
 
 
@@ -26,3 +29,38 @@ def test_a_share_online_loader_falls_back_to_yfinance(monkeypatch: pytest.Monkey
 
     assert result is expected
     assert calls == ["ak:603881", "yf:603881.SS"]
+
+
+def test_yfinance_loader_accepts_multiindex_columns(monkeypatch: pytest.MonkeyPatch) -> None:
+    dates = pd.date_range("2026-01-01", periods=3)
+    columns = pd.MultiIndex.from_tuples(
+        [
+            ("Open", "603881.SS"),
+            ("High", "603881.SS"),
+            ("Low", "603881.SS"),
+            ("Close", "603881.SS"),
+            ("Volume", "603881.SS"),
+        ],
+        names=["Price", "Ticker"],
+    )
+    raw = pd.DataFrame(
+        [
+            [10.0, 11.0, 9.8, 10.5, 1000],
+            [10.5, 11.2, 10.1, 11.0, 1200],
+            [11.0, 11.8, 10.8, 11.6, 1500],
+        ],
+        index=pd.Index(dates, name="Date"),
+        columns=columns,
+    )
+
+    class FakeYFinance:
+        @staticmethod
+        def download(*args: object, **kwargs: object) -> pd.DataFrame:
+            return raw
+
+    monkeypatch.setitem(sys.modules, "yfinance", FakeYFinance)
+
+    result = market_data._load_yfinance_daily("603881.SS", days=3)
+
+    assert list(result.columns) == list(REQUIRED_COLUMNS)
+    assert result["close"].tolist() == [10.5, 11.0, 11.6]
