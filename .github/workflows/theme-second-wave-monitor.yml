@@ -69,13 +69,16 @@ jobs:
 
       - name: Run scanner
         run: |
-          if [ "$SEND_DISCORD" = "true" ]; then
+          if [ "$SEND_DISCORD" = "true" ] && [ -n "$DISCORD_WEBHOOK_URL" ]; then
             python -m theme_second_wave.cli scan \
               --watchlist "$WATCHLIST_PATH" \
               --max-results "$MAX_RESULTS" \
               --report-dir reports \
               --send-discord
           else
+            if [ "$SEND_DISCORD" = "true" ] && [ -z "$DISCORD_WEBHOOK_URL" ]; then
+              echo "::warning::DISCORD_WEBHOOK_URL secret is not configured; dashboard will be generated without Discord push."
+            fi
             python -m theme_second_wave.cli scan \
               --watchlist "$WATCHLIST_PATH" \
               --max-results "$MAX_RESULTS" \
