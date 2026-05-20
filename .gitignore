@@ -7,3 +7,4 @@ __pycache__/
 reports/
 data/
 .DS_Store
+.~*.xlsx
