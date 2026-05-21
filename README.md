@@ -13,6 +13,8 @@
 
 本战法只做“主题强 + 个股强 + 一波后修复 + 二波触发”的结构。
 
+完整策略说明见 [docs/strategy_second_wave.md](docs/strategy_second_wave.md)。
+
 核心阶段：
 
 - `watch`: 主题或个股强度不足，暂不跟踪
@@ -28,6 +30,16 @@
 - 修复质量：回撤幅度、缩量、守住 MA10/MA20
 - 二波触发：站回 MA5/MA10、突破修复平台、放量确认
 - 风险扣分：高位乖离、放量下跌、破位、数据不足
+
+## 研究闭环
+
+项目吸收了 Vibe-Trading 中最适合本战法的轻量研究框架：
+
+- `docs/strategy_second_wave.md`：交易法说明书，固定阶段、买点、失效和复盘规则。
+- `config/hypotheses.json`：主题假设登记表，用来记录数据中心、液冷、光通信等主题的 setup、trigger、invalidation。
+- `reports/latest_run_card.json`：每次扫描自动生成的 run card，记录候选池 hash、策略版本、扫描参数、阶段分布、数据源分布和重点跟踪名单。
+
+这三个文件共同解决“为什么当时给出这个信号”的追溯问题。
 
 ## 候选池格式
 
@@ -130,7 +142,19 @@ git -c http.proxy=http://127.0.0.1:7890 -c http.version=HTTP/1.1 push
 reports/latest_dashboard.md
 reports/scan_YYYYMMDD_HHMMSS.md
 reports/latest_results.csv
+reports/latest_run_card.json
+reports/run_card_YYYYMMDD_HHMMSS.json
 ```
+
+`latest_run_card.json` 是机器可读的复盘记录，重点字段包括：
+
+- `strategy_version`
+- `watchlist.sha256`
+- `stage_counts`
+- `data_source_counts`
+- `latest_date_counts`
+- `hypotheses.matches`
+- `focus`
 
 ## 重要提醒
 

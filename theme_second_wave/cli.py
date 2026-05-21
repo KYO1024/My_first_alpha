@@ -45,10 +45,14 @@ def main() -> None:
             report_dir=args.report_dir,
             send_discord=args.send_discord,
         )
-        results, report_path, csv_path = CandidateScanner(config).run_and_report()
-        print(f"scanned {len(results)} candidates")
+        scanner = CandidateScanner(config)
+        results, report_path, csv_path = scanner.run_and_report()
+        print(f"scanned {scanner.candidate_count} candidates")
+        print(f"reported {len(results)} results")
         print(f"dashboard: {report_path}")
         print(f"csv: {csv_path}")
+        if scanner.run_card_path is not None:
+            print(f"run card: {scanner.run_card_path}")
 
 
 if __name__ == "__main__":

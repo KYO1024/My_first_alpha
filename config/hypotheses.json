@@ -1,0 +1,32 @@
+{
+  "strategy_version": "theme_second_wave_v0.2",
+  "hypotheses": [
+    {
+      "id": "h_data_center_repair",
+      "name": "数据中心强趋势二波/修复",
+      "themes": ["数据中心", "算力", "IDC"],
+      "setup": "主题仍在强势周期内，个股完成一波主升后缩量回踩，重新靠近 MA5/MA10 或修复平台高点。",
+      "trigger": "放量站回短均线并突破修复平台高点，优先观察距触发价 0-5% 的标的。",
+      "invalidation": "跌破 MA20/MA60、放量下跌、主题退潮或修复时间过长。",
+      "review_notes": "关注 AI 算力链条的订单、政策和资金持续性。"
+    },
+    {
+      "id": "h_liquid_cooling_first_wave",
+      "name": "液冷主题一波强势转修复",
+      "themes": ["液冷", "服务器", "新能源热管理"],
+      "setup": "一波涨幅已经打开，但尚未完成充分分歧，等待缩量回踩和平台整理。",
+      "trigger": "一波强势股回踩不破关键均线，重新放量站上 MA5/MA10。",
+      "invalidation": "高位放量长阴、跌破 MA20 或主题内龙头明显退潮。",
+      "review_notes": "重点观察从一波强势切换到分歧修复的节奏。"
+    },
+    {
+      "id": "h_optical_communication_repair",
+      "name": "光通信强趋势修复",
+      "themes": ["光通信", "CPO", "光模块"],
+      "setup": "光通信链条强势股高位分歧后仍保持趋势结构，缩量修复并靠近触发价。",
+      "trigger": "修复平台放量突破，且距触发价收敛到 0-5%。",
+      "invalidation": "跌破 MA20 后无法快速收复，或板块内核心标的转弱。",
+      "review_notes": "对比核心龙头和补涨股，避免弱跟风二波。"
+    }
+  ]
+}
