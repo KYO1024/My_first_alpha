@@ -62,6 +62,42 @@
 - 备注：`notes`、`备注`
 - 主题强度：`theme_score`、`主题强度`
 
+## 自动板块股票池
+
+除手动维护 `watch_list.xlsx` 外，也可以用 `config/sectors.yml` 自动拉取指定概念/行业成分股，生成临时股票池后扫描。
+
+配置示例：
+
+```yaml
+auto_watchlist:
+  enabled: true
+  max_symbols_per_sector: 80
+  exclude_st: true
+  merge_manual_watchlist: true
+  output_path: reports/auto_watch_list.xlsx
+  sectors:
+    - type: concept
+      name: 数据中心
+      theme_score: 80
+    - type: concept
+      name: 液冷服务器
+      theme_score: 75
+```
+
+生成自动股票池：
+
+```bash
+python scripts/build_watchlist.py
+```
+
+生成并直接扫描：
+
+```bash
+python -m theme_second_wave.cli scan --auto-watchlist --watchlist watch_list.xlsx
+```
+
+`merge_manual_watchlist: true` 时，自动板块成分股会和手动 `watch_list.xlsx` 合并去重。
+
 ## 安装
 
 ```bash
@@ -122,6 +158,8 @@ python -m theme_second_wave.cli scan --send-discord
 2. 在 GitHub 仓库 `Settings -> Secrets and variables -> Actions` 中新增 `DISCORD_WEBHOOK_URL`
 3. 到 `Actions -> Theme Second Wave Monitor` 手动运行一次
 
+当前定时任务默认在北京时间 17:30 运行，并默认启用 `config/sectors.yml` 自动板块股票池。手动运行 workflow 时，可将 `auto_watchlist` 设为 `false`，继续只使用仓库根目录的 `watch_list.xlsx`。
+
 如果候选池还在本机 `Documents/Codex/watch_list.xlsx`，可先运行 `python scripts/sync_watchlist.py` 同步一份到仓库根目录。
 
 详细步骤见 [docs/github-actions.md](docs/github-actions.md)。
@@ -143,6 +181,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c http.version=HTTP/1.1 push
 reports/latest_dashboard.md
 reports/scan_YYYYMMDD_HHMMSS.md
 reports/latest_results.csv
+reports/auto_watch_list.xlsx
 reports/latest_run_card.json
 reports/run_card_YYYYMMDD_HHMMSS.json
 reports/decision_log.jsonl

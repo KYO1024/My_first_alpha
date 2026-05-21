@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .models import ScanConfig
 from .scanner import CandidateScanner
+from .sector_watchlist import build_auto_watchlist
 
 
 def _load_dotenv_if_available() -> None:
@@ -28,6 +29,9 @@ def main() -> None:
     scan.add_argument("--min-history-days", type=int, default=60)
     scan.add_argument("--max-results", type=int, default=30)
     scan.add_argument("--send-discord", action="store_true")
+    scan.add_argument("--auto-watchlist", action="store_true", help="build watchlist from config/sectors.yml before scan")
+    scan.add_argument("--sector-config", type=Path, default=Path("config/sectors.yml"))
+    scan.add_argument("--auto-watchlist-output", type=Path, default=None)
     scan.add_argument("--debug", action="store_true")
 
     args = parser.parse_args()
@@ -37,8 +41,16 @@ def main() -> None:
     )
 
     if args.command == "scan":
+        watchlist_path = args.watchlist
+        if args.auto_watchlist:
+            watchlist_path = build_auto_watchlist(
+                config_path=args.sector_config,
+                output_path=args.auto_watchlist_output,
+                manual_watchlist_path=args.watchlist,
+            )
+            print(f"auto watchlist: {watchlist_path}")
         config = ScanConfig(
-            watchlist_path=args.watchlist,
+            watchlist_path=watchlist_path,
             data_dir=args.data_dir,
             min_history_days=args.min_history_days,
             max_results=args.max_results,

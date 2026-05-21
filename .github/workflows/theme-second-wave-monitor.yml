@@ -19,9 +19,17 @@ on:
         options:
           - "true"
           - "false"
+      auto_watchlist:
+        description: "Build watchlist from config/sectors.yml before scanning"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
   schedule:
-    # GitHub cron uses UTC. 10:30 UTC = 18:30 Asia/Shanghai.
-    - cron: "30 10 * * 1-5"
+    # GitHub cron uses UTC. 09:30 UTC = 17:30 Asia/Shanghai.
+    - cron: "30 9 * * 1-5"
 
 permissions:
   contents: read
@@ -40,6 +48,7 @@ jobs:
       WATCHLIST_PATH: ${{ github.event.inputs.watchlist_path || 'watch_list.xlsx' }}
       MAX_RESULTS: ${{ github.event.inputs.max_results || '30' }}
       SEND_DISCORD: ${{ github.event.inputs.send_discord || 'true' }}
+      AUTO_WATCHLIST: ${{ github.event.inputs.auto_watchlist || 'true' }}
 
     steps:
       - name: Checkout repository
@@ -64,6 +73,7 @@ jobs:
           python -m pytest -q
 
       - name: Ensure watchlist exists
+        if: env.AUTO_WATCHLIST != 'true'
         run: |
           test -f "$WATCHLIST_PATH"
 
@@ -79,20 +89,19 @@ jobs:
 
       - name: Run scanner
         run: |
+          SCAN_ARGS="--max-results $MAX_RESULTS --report-dir reports"
+          if [ "$AUTO_WATCHLIST" = "true" ]; then
+            SCAN_ARGS="$SCAN_ARGS --auto-watchlist --watchlist $WATCHLIST_PATH"
+          else
+            SCAN_ARGS="$SCAN_ARGS --watchlist $WATCHLIST_PATH"
+          fi
           if [ "$SEND_DISCORD" = "true" ] && [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            python -m theme_second_wave.cli scan \
-              --watchlist "$WATCHLIST_PATH" \
-              --max-results "$MAX_RESULTS" \
-              --report-dir reports \
-              --send-discord
+            python -m theme_second_wave.cli scan $SCAN_ARGS --send-discord
           else
             if [ "$SEND_DISCORD" = "true" ] && [ -z "$DISCORD_WEBHOOK_URL" ]; then
               echo "::warning::DISCORD_WEBHOOK_URL secret is not configured; dashboard will be generated without Discord push."
             fi
-            python -m theme_second_wave.cli scan \
-              --watchlist "$WATCHLIST_PATH" \
-              --max-results "$MAX_RESULTS" \
-              --report-dir reports
+            python -m theme_second_wave.cli scan $SCAN_ARGS
           fi
 
       - name: Save decision memory
@@ -112,6 +121,7 @@ jobs:
           path: |
             reports/latest_dashboard.md
             reports/latest_results.csv
+            reports/auto_watch_list.xlsx
             reports/latest_run_card.json
             reports/run_card_*.json
             reports/decision_log.jsonl
