@@ -23,6 +23,7 @@ def write_run_card(
     candidate_count: int,
     dashboard_path: Path,
     csv_path: Path,
+    decision_log_summary: dict[str, object] | None = None,
     hypotheses_path: Path = DEFAULT_HYPOTHESES_PATH,
 ) -> Path:
     report_dir = Path(config.report_dir)
@@ -35,6 +36,7 @@ def write_run_card(
         candidate_count=candidate_count,
         dashboard_path=dashboard_path,
         csv_path=csv_path,
+        decision_log_summary=decision_log_summary,
         hypotheses_path=hypotheses_path,
         generated_at=now,
     )
@@ -55,6 +57,7 @@ def build_run_card(
     candidate_count: int,
     dashboard_path: Path,
     csv_path: Path,
+    decision_log_summary: dict[str, object] | None = None,
     hypotheses_path: Path = DEFAULT_HYPOTHESES_PATH,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -80,7 +83,10 @@ def build_run_card(
             "dashboard": str(dashboard_path),
             "csv": str(csv_path),
             "run_card": str(Path(config.report_dir) / "latest_run_card.json"),
+            "decision_log": decision_log_summary.get("jsonl_path") if decision_log_summary else None,
+            "decision_log_markdown": decision_log_summary.get("markdown_path") if decision_log_summary else None,
         },
+        "decision_log": decision_log_summary or {},
         "stage_counts": _stage_counts(ordered),
         "data_source_counts": _metric_counts(ordered, "data_source"),
         "latest_date_counts": _metric_counts(ordered, "latest_date"),

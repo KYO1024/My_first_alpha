@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from .dashboard import render_discord_summary, sort_results, write_reports
+from .decision_log import DecisionLogSummary, update_decision_log
 from .discord import send_discord_message
 from .market_data import MarketDataProvider
 from .models import ScanConfig, ScanResult
@@ -23,6 +24,7 @@ class CandidateScanner:
         self.candidate_count = 0
         self.all_results: list[ScanResult] = []
         self.run_card_path: Path | None = None
+        self.decision_log_summary: DecisionLogSummary | None = None
 
     def run(self) -> list[ScanResult]:
         self.watchlist_path = resolve_watchlist_path(self.config.watchlist_path)
@@ -43,6 +45,10 @@ class CandidateScanner:
     def run_and_report(self) -> tuple[list[ScanResult], Path, Path]:
         results = self.run()
         markdown_path, csv_path = write_reports(results, self.config.report_dir)
+        self.decision_log_summary = update_decision_log(
+            results=self.all_results,
+            report_dir=self.config.report_dir,
+        )
         if self.watchlist_path is not None:
             self.run_card_path = write_run_card(
                 results=self.all_results,
@@ -51,6 +57,7 @@ class CandidateScanner:
                 candidate_count=self.candidate_count,
                 dashboard_path=markdown_path,
                 csv_path=csv_path,
+                decision_log_summary=self.decision_log_summary.to_dict(),
             )
         if self.config.send_discord:
             send_discord_message(_discord_summary(render_discord_summary(results)))

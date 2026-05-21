@@ -38,6 +38,7 @@
 - `docs/strategy_second_wave.md`：交易法说明书，固定阶段、买点、失效和复盘规则。
 - `config/hypotheses.json`：主题假设登记表，用来记录数据中心、液冷、光通信等主题的 setup、trigger、invalidation。
 - `reports/latest_run_card.json`：每次扫描自动生成的 run card，记录候选池 hash、策略版本、扫描参数、阶段分布、数据源分布和重点跟踪名单。
+- `reports/decision_log.jsonl`：重点信号决策日志，记录看多理由、看空风险、风险审查、执行条件，并在后续扫描中追踪 1/3/5/10 日收益。
 
 这三个文件共同解决“为什么当时给出这个信号”的追溯问题。
 
@@ -144,6 +145,8 @@ reports/scan_YYYYMMDD_HHMMSS.md
 reports/latest_results.csv
 reports/latest_run_card.json
 reports/run_card_YYYYMMDD_HHMMSS.json
+reports/decision_log.jsonl
+reports/decision_log.md
 ```
 
 `latest_run_card.json` 是机器可读的复盘记录，重点字段包括：
@@ -155,6 +158,14 @@ reports/run_card_YYYYMMDD_HHMMSS.json
 - `latest_date_counts`
 - `hypotheses.matches`
 - `focus`
+- `decision_log`
+
+`decision_log.jsonl` 是后验追踪记录。每次扫描会自动：
+
+- 记录新的二波确认、分歧修复、一波强势信号
+- 保存看多理由、看空风险、风险审查、执行条件
+- 在后续扫描中更新 1/3/5/10 日收益
+- 标记是否触发买点或跌破失效价
 
 ## 重要提醒
 

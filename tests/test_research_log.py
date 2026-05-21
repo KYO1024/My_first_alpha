@@ -50,6 +50,13 @@ def test_run_card_records_strategy_context(tmp_path: Path) -> None:
         candidate_count=1,
         dashboard_path=tmp_path / "latest_dashboard.md",
         csv_path=tmp_path / "latest_results.csv",
+        decision_log_summary={
+            "jsonl_path": str(tmp_path / "decision_log.jsonl"),
+            "markdown_path": str(tmp_path / "decision_log.md"),
+            "added_count": 1,
+            "updated_count": 0,
+            "open_count": 1,
+        },
         hypotheses_path=hypotheses,
         generated_at=datetime(2026, 5, 21, 9, 30, tzinfo=ZoneInfo("Asia/Shanghai")),
     )
@@ -61,6 +68,7 @@ def test_run_card_records_strategy_context(tmp_path: Path) -> None:
     assert card["data_source_counts"] == {"yfinance": 1}
     assert card["hypotheses"]["matches"][0]["matched_count"] == 1
     assert card["focus"][0]["trigger_distance_pct"] == 5.0
+    assert card["decision_log"]["added_count"] == 1
 
 
 def test_write_run_card_creates_latest_file(tmp_path: Path) -> None:

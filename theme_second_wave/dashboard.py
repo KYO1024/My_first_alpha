@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from .decision_support import bear_case, bull_case, execution_condition, risk_check
 from .models import ScanResult, WaveStage
 
 
@@ -108,6 +109,10 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
                 f"- 数据源: {_metric_text(item, 'data_source')}",
                 f"- 高点回撤: {_fmt_pct(item.drawdown_from_high)}",
                 f"- 修复量能: {_fmt(item.volume_contraction)} 倍一波高点附近均量",
+                f"- 看多理由: {bull_case(item)}",
+                f"- 看空风险: {bear_case(item)}",
+                f"- 风险审查: {risk_check(item)}",
+                f"- 执行条件: {execution_condition(item)}",
                 f"- 操作: {item.action}",
             ]
         )
@@ -153,7 +158,7 @@ def render_discord_summary(results: list[ScanResult], generated_at: datetime | N
                 f"- {c.code} {c.name or '-'} | {STAGE_LABELS[item.stage]} | "
                 f"距触发 {_fmt_signed_pct(_metric_float(item, 'trigger_distance_pct'))} | "
                 f"触发 {_fmt(item.trigger_price)} | 数据日 {_metric_text(item, 'latest_date')} | "
-                f"源 {_metric_text(item, 'data_source')}"
+                f"源 {_metric_text(item, 'data_source')} | 执行: {execution_condition(item)}"
             )
 
     lines.extend(["", "## 候选明细"])

@@ -71,6 +71,7 @@ def test_discord_summary_includes_focus_fields() -> None:
     assert "距触发 +4.68%" in summary
     assert "数据日 2026-05-20" in summary
     assert "源 yfinance" in summary
+    assert "执行:" in summary
 
 
 def _sample_bars() -> pd.DataFrame:

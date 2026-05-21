@@ -67,6 +67,16 @@ jobs:
         run: |
           test -f "$WATCHLIST_PATH"
 
+      - name: Restore decision memory
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            reports/decision_log.jsonl
+            reports/decision_log.md
+          key: decision-log-${{ github.run_id }}
+          restore-keys: |
+            decision-log-
+
       - name: Run scanner
         run: |
           if [ "$SEND_DISCORD" = "true" ] && [ -n "$DISCORD_WEBHOOK_URL" ]; then
@@ -85,6 +95,15 @@ jobs:
               --report-dir reports
           fi
 
+      - name: Save decision memory
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            reports/decision_log.jsonl
+            reports/decision_log.md
+          key: decision-log-${{ github.run_id }}
+
       - name: Upload dashboard artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -93,6 +112,10 @@ jobs:
           path: |
             reports/latest_dashboard.md
             reports/latest_results.csv
+            reports/latest_run_card.json
+            reports/run_card_*.json
+            reports/decision_log.jsonl
+            reports/decision_log.md
             reports/scan_*.md
           if-no-files-found: ignore
           retention-days: 14

@@ -53,6 +53,9 @@ def main() -> None:
         print(f"csv: {csv_path}")
         if scanner.run_card_path is not None:
             print(f"run card: {scanner.run_card_path}")
+        if scanner.decision_log_summary is not None:
+            print(f"decision log: {scanner.decision_log_summary.jsonl_path}")
+            print(f"decision markdown: {scanner.decision_log_summary.markdown_path}")
 
 
 if __name__ == "__main__":
