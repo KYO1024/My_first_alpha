@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,9 @@ from .watchlist import load_watchlist, normalize_code
 
 DEFAULT_SECTOR_CONFIG_PATH = Path("config/sectors.yml")
 DEFAULT_AUTO_WATCHLIST_PATH = Path("reports/auto_watch_list.xlsx")
+WATCHLIST_COLUMNS = ("股票代码", "股票名称", "主题", "行业", "主题强度", "备注")
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -68,7 +72,11 @@ def build_auto_watchlist(
 
     rows: list[dict[str, object]] = []
     for sector in config.sectors:
-        members = fetch_sector_members(sector)
+        try:
+            members = fetch_sector_members(sector)
+        except Exception as exc:
+            logger.warning("failed to fetch sector %s:%s: %s", sector.type, sector.name, exc)
+            continue
         if config.exclude_st:
             members = members[~members["name"].str.upper().str.contains("ST", na=False)]
         limit = sector.max_symbols or config.max_symbols_per_sector
@@ -100,7 +108,7 @@ def build_auto_watchlist(
 
     output = Path(output_path) if output_path is not None else config.output_path
     output.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(_dedupe_rows(rows)).to_excel(output, index=False)
+    pd.DataFrame(_dedupe_rows(rows), columns=list(WATCHLIST_COLUMNS)).to_excel(output, index=False)
     return output
 
 
@@ -115,15 +123,37 @@ def fetch_sector_members(sector: SectorSpec) -> pd.DataFrame:
 def _fetch_concept_members(name: str) -> pd.DataFrame:
     import akshare as ak
 
-    raw = ak.stock_board_concept_cons_ths(symbol=name)
+    raw = _call_first_available(
+        ak,
+        ("stock_board_concept_cons_ths", "stock_board_concept_cons_em"),
+        symbol=name,
+    )
     return _normalize_member_frame(raw, sector=name)
 
 
 def _fetch_industry_members(name: str) -> pd.DataFrame:
     import akshare as ak
 
-    raw = ak.stock_board_industry_cons_ths(symbol=name)
+    raw = _call_first_available(
+        ak,
+        ("stock_board_industry_cons_ths", "stock_board_industry_cons_em"),
+        symbol=name,
+    )
     return _normalize_member_frame(raw, sector=name)
+
+
+def _call_first_available(module: object, names: tuple[str, ...], **kwargs: object) -> pd.DataFrame:
+    errors: list[str] = []
+    for name in names:
+        func = getattr(module, name, None)
+        if not callable(func):
+            errors.append(f"{name}: not available")
+            continue
+        try:
+            return func(**kwargs)
+        except Exception as exc:
+            errors.append(f"{name}: {exc}")
+    raise AttributeError("; ".join(errors))
 
 
 def _normalize_member_frame(raw: pd.DataFrame, sector: str) -> pd.DataFrame:

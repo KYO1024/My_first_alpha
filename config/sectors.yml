@@ -9,8 +9,8 @@ auto_watchlist:
       name: 数据中心
       theme_score: 80
     - type: concept
-      name: 液冷服务器
+      name: 液冷概念
       theme_score: 75
     - type: concept
-      name: 光通信
+      name: 光通信模块
       theme_score: 75

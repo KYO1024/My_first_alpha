@@ -42,6 +42,42 @@
 
 这三个文件共同解决“为什么当时给出这个信号”的追溯问题。
 
+## A 股投研 Skills 与数据 schema
+
+仓库新增了一套 A 股专用投研 Skills 草案，位于 `skills/`：
+
+- `a-share-industry-chain-deepdive`
+- `a-share-bottleneck-finder`
+- `a-share-financial-redflag-check`
+- `a-share-order-capacity-verifier`
+- `a-share-theme-heat-score`
+- `a-share-position-sizing`
+- `a-share-dashboard-generator`
+- `a-share-quarterly-tracker`
+
+公共投研字段 schema 位于 `config/a_share_research_schema.json`，用于把主题、产业链环节、订单、产能、财务质量、证据等级、评分和行动字段统一起来。
+
+校验 CSV/XLSX 投研表：
+
+```bash
+python scripts/validate_a_share_dataset.py path/to/research_pool.xlsx
+```
+
+生成投研监控 Dashboard：
+
+```bash
+python scripts/build_a_share_research_dashboard.py path/to/research_pool.xlsx
+```
+
+默认输出：
+
+```text
+reports/latest_research_dashboard.md
+reports/latest_research_run_card.json
+```
+
+现有 `watch_list.xlsx` 是二波扫描候选池，只要求股票代码等轻字段；完整投研表需要额外维护 `theme`、`evidence_level` 等字段。
+
 ## 候选池格式
 
 默认会按顺序查找：
@@ -80,7 +116,7 @@ auto_watchlist:
       name: 数据中心
       theme_score: 80
     - type: concept
-      name: 液冷服务器
+      name: 液冷概念
       theme_score: 75
 ```
 
