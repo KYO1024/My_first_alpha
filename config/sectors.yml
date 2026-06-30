@@ -1,16 +1,83 @@
 auto_watchlist:
   enabled: true
-  max_symbols_per_sector: 80
+  max_symbols_per_sector: 25
   exclude_st: true
   merge_manual_watchlist: true
   output_path: reports/auto_watch_list.xlsx
   sectors:
     - type: concept
-      name: 数据中心
-      theme_score: 80
-    - type: concept
-      name: 液冷概念
-      theme_score: 75
+      name: CPO概念
+      theme_score: 90
+      max_symbols: 25
     - type: concept
       name: 光通信模块
-      theme_score: 75
+      theme_score: 88
+      max_symbols: 25
+    - type: concept
+      name: AI芯片
+      theme_score: 88
+      max_symbols: 25
+    - type: concept
+      name: 存储芯片
+      theme_score: 84
+      max_symbols: 20
+    - type: concept
+      name: PCB
+      theme_score: 84
+      max_symbols: 25
+    - type: concept
+      name: 液冷概念
+      theme_score: 82
+      max_symbols: 25
+    - type: concept
+      name: 铜缆高速连接
+      theme_score: 82
+      max_symbols: 20
+    - type: concept
+      name: 光纤概念
+      theme_score: 78
+      max_symbols: 20
+    - type: concept
+      name: 数据中心
+      theme_score: 84
+      max_symbols: 25
+    - type: concept
+      name: 算力概念
+      theme_score: 78
+      max_symbols: 25
+    - type: concept
+      name: 云计算
+      theme_score: 72
+      max_symbols: 20
+    - type: industry
+      name: 通信设备
+      theme_score: 78
+      max_symbols: 20
+    - type: industry
+      name: 半导体
+      theme_score: 78
+      max_symbols: 20
+    - type: industry
+      name: 计算机设备
+      theme_score: 74
+      max_symbols: 20
+    - type: industry
+      name: 元件
+      theme_score: 72
+      max_symbols: 20
+    - type: industry
+      name: 其他电源设备Ⅱ
+      theme_score: 72
+      max_symbols: 15
+    - type: industry
+      name: 电网设备
+      theme_score: 70
+      max_symbols: 15
+    - type: industry
+      name: 合成树脂
+      theme_score: 68
+      max_symbols: 15
+    - type: industry
+      name: 玻璃玻纤
+      theme_score: 68
+      max_symbols: 15

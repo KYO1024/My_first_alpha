@@ -67,7 +67,7 @@ def render_markdown(results: list[ScanResult], generated_at: datetime | None = N
     )
     for idx, item in enumerate(ordered, start=1):
         candidate = item.candidate
-        theme = " / ".join(part for part in (candidate.theme, candidate.sector) if part) or "-"
+        theme = _theme_label(candidate.theme, candidate.sector)
         lines.append(
             "| {idx} | {code} | {name} | {theme} | {stage} | {score:.1f} | {price} | {trigger} | {distance} | {stop} | {date} | {source} | {action} |".format(
                 idx=idx,
@@ -164,7 +164,7 @@ def render_discord_summary(results: list[ScanResult], generated_at: datetime | N
     lines.extend(["", "## 候选明细"])
     for idx, item in enumerate(ordered, start=1):
         c = item.candidate
-        theme = " / ".join(part for part in (c.theme, c.sector) if part) or "-"
+        theme = _theme_label(c.theme, c.sector)
         base = (
             f"{idx}. {c.code} {c.name or '-'} | {theme} | {STAGE_LABELS[item.stage]} | "
             f"分数 {item.score:.1f}"
@@ -190,6 +190,16 @@ def _to_report_time(value: datetime | None = None) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone)
     return value.astimezone(timezone)
+
+
+def _theme_label(theme: str, sector: str) -> str:
+    parts: list[str] = []
+    for value in (theme, sector):
+        for raw_part in str(value or "").split(" / "):
+            part = raw_part.strip()
+            if part and part not in parts:
+                parts.append(part)
+    return " / ".join(parts) if parts else "-"
 
 
 def write_reports(results: list[ScanResult], report_dir: str | Path = "reports") -> tuple[Path, Path]:

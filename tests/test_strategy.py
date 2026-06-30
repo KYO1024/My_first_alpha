@@ -33,6 +33,27 @@ def test_markdown_escapes_table_pipes() -> None:
     assert "AI\\|算力" in markdown
 
 
+def test_markdown_dedupes_theme_and_sector_label() -> None:
+    result = ScanResult(
+        candidate=StockCandidate(
+            code="688484",
+            name="南芯科技",
+            theme="半导体",
+            sector="半导体",
+        ),
+        stage=WaveStage.REPAIR,
+        score=70.0,
+        breakdown=ScoreBreakdown(),
+    )
+
+    markdown = render_markdown([result])
+    summary = render_discord_summary([result])
+
+    assert "半导体 / 半导体" not in markdown
+    assert "半导体 / 半导体" not in summary
+    assert "| 688484 | 南芯科技 | 半导体 |" in markdown
+
+
 def test_discord_summary_uses_list_for_missing_data() -> None:
     result = ScanResult(
         candidate=StockCandidate(code="603881", name="数据港", theme="数据中心"),
